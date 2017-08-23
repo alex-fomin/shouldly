@@ -24,47 +24,49 @@ namespace Shouldly
             return ReferenceEquals(actual, expected);
         }
 
-        public static bool Equal<T>(T expected, T actual)
+        public static bool Equal<T>(T expected, T actual, IEqualityComparer<T> comparer = null)
         {
-            return Equal(expected, actual, GetEqualityComparer<T>());
+            var equalityComparer = comparer ?? GetEqualityComparer<T>();
+            return equalityComparer.Equals(actual, expected);
         }
 
-        public static bool Equal<T>(T expected, T actual, IEqualityComparer<T> comparer)
+        static IEqualityComparer<T> GetEqualityComparer<T>()
         {
-            return comparer.Equals(actual, expected);
+            if (ShouldlyConfiguration.CompareAsObjectTypes.Contains(typeof(T).FullName) || typeof(T) == typeof(string))
+                return new ObjectEqualityComparer<T>();
+
+            return new EqualityComparer<T>();
         }
 
-        static IEqualityComparer<T> GetEqualityComparer<T>(IEqualityComparer innerComparer = null)
-        {
-            return new EqualityComparer<T>(innerComparer);
-        }
-
-        public static bool Equal<T>(IEnumerable<T> actual, IEnumerable<T> expected)
+        public static bool Equal<T>(IEnumerable<T> actual, IEnumerable<T> expected, IEqualityComparer<T> comparer = null)
         {
             if (actual == null && expected == null)
                 return true;
             if (actual == null || expected == null)
                 return false;
 
-            var expectedEnum = expected.GetEnumerator();
-            var actualEnum = actual.GetEnumerator();
-
-            for (; ; )
+            var equalityComparer = comparer ?? GetEqualityComparer<T>();
+            
+            using(var expectedEnum = expected.GetEnumerator())
+            using(var actualEnum = actual.GetEnumerator())
             {
-                var expectedHasData = expectedEnum.MoveNext();
-                var actualHasData = actualEnum.MoveNext();
-
-                if (!expectedHasData && !actualHasData)
-                    return true;
-
-                if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current))
+                for (; ; )
                 {
-                    return false;
+                    var expectedHasData = expectedEnum.MoveNext();
+                    var actualHasData = actualEnum.MoveNext();
+
+                    if (!expectedHasData && !actualHasData)
+                        return true;
+
+                    if (expectedHasData != actualHasData || !equalityComparer.Equals(actualEnum.Current, expectedEnum.Current))
+                    {
+                        return false;
+                    }
                 }
             }
         }
 
-        public static bool EqualIgnoreOrder<T>(IEnumerable<T> actual, IEnumerable<T> expected)
+        public static bool EqualIgnoreOrder<T>(IEnumerable<T> actual, IEnumerable<T> expected, IEqualityComparer<T> comparer = null)
         {
             if (actual == null && expected == null)
                 return true;
@@ -76,10 +78,13 @@ namespace Shouldly
             if (actualCollection != null && expected is ICollection && actualCollection.Count != ((ICollection)expected).Count)
                 return false;
 
+            
+            var equalityComparer = comparer ?? GetEqualityComparer<T>();
+            
             var expectedList = expected.ToList();
             foreach (var actualElement in actual)
             {
-                var match = expectedList.FirstOrDefault(x => Equal(x, actualElement));
+                var match = expectedList.FirstOrDefault(x => equalityComparer.Equals(x, actualElement));
                 if (!expectedList.Remove(match))
                     return false;
             }
@@ -89,60 +94,64 @@ namespace Shouldly
 
         public static bool Equal(IEnumerable<decimal> actual, IEnumerable<decimal> expected, decimal tolerance)
         {
-            var expectedEnum = expected.GetEnumerator();
-            var actualEnum = actual.GetEnumerator();
-
-            for (; ; )
+            using(var expectedEnum = expected.GetEnumerator())
+            using(var actualEnum = actual.GetEnumerator())
             {
-                var expectedHasData = expectedEnum.MoveNext();
-                var actualHasData = actualEnum.MoveNext();
-
-                if (!expectedHasData && !actualHasData)
-                    return true;
-
-                if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current, tolerance))
+                for (; ; )
                 {
-                    return false;
+                    var expectedHasData = expectedEnum.MoveNext();
+                    var actualHasData = actualEnum.MoveNext();
+
+                    if (!expectedHasData && !actualHasData)
+                        return true;
+
+                    if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current, tolerance))
+                    {
+                        return false;
+                    }
                 }
             }
         }
 
         public static bool Equal(IEnumerable<float> actual, IEnumerable<float> expected, double tolerance)
         {
-            var expectedEnum = expected.GetEnumerator();
-            var actualEnum = actual.GetEnumerator();
-
-            for (; ; )
+            using(var expectedEnum = expected.GetEnumerator())
+            using (var actualEnum = actual.GetEnumerator())
             {
-                var expectedHasData = expectedEnum.MoveNext();
-                var actualHasData = actualEnum.MoveNext();
 
-                if (!expectedHasData && !actualHasData)
-                    return true;
-
-                if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current, tolerance))
+                for (;;)
                 {
-                    return false;
+                    var expectedHasData = expectedEnum.MoveNext();
+                    var actualHasData = actualEnum.MoveNext();
+
+                    if (!expectedHasData && !actualHasData)
+                        return true;
+
+                    if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current, tolerance))
+                    {
+                        return false;
+                    }
                 }
             }
         }
 
         public static bool Equal(IEnumerable<double> actual, IEnumerable<double> expected, double tolerance)
         {
-            var expectedEnum = expected.GetEnumerator();
-            var actualEnum = actual.GetEnumerator();
-
-            for (; ; )
+            using(var expectedEnum = expected.GetEnumerator())
+            using(var actualEnum = actual.GetEnumerator())
             {
-                var expectedHasData = expectedEnum.MoveNext();
-                var actualHasData = actualEnum.MoveNext();
-
-                if (!expectedHasData && !actualHasData)
-                    return true;
-
-                if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current, tolerance))
+                for (; ; )
                 {
-                    return false;
+                    var expectedHasData = expectedEnum.MoveNext();
+                    var actualHasData = actualEnum.MoveNext();
+
+                    if (!expectedHasData && !actualHasData)
+                        return true;
+
+                    if (expectedHasData != actualHasData || !Equal(actualEnum.Current, expectedEnum.Current, tolerance))
+                    {
+                        return false;
+                    }
                 }
             }
         }
@@ -174,7 +183,7 @@ namespace Shouldly
 
         public static bool InstanceOf(object o, Type expected)
         {
-            return o != null ? expected.IsInstanceOfType(o) : false; 
+            return o != null && expected.IsInstanceOfType(o); 
         }
 
         public static bool StringMatchingRegex(string actual, string regexPattern)
@@ -209,7 +218,7 @@ namespace Shouldly
                 return actual.EndsWith(expected, StringComparison.OrdinalIgnoreCase);
             }
 
-            return actual.EndsWith(expected);
+            return actual.EndsWith(expected, StringComparison.Ordinal);
         }
 
         public static bool StringStartingWithUsingCaseSensitivity(string actual, string expected, Case caseSensitivity)
@@ -222,7 +231,7 @@ namespace Shouldly
                 return actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase);
             }
 
-            return actual.StartsWith(expected);
+            return actual.StartsWith(expected, StringComparison.Ordinal);
         }
 
         public static bool StringEqualWithCaseSensitivity(string actual, string expected, Case caseSensitivity)
@@ -237,25 +246,26 @@ namespace Shouldly
 
         public static bool EnumerableStringEqualWithCaseSensitivity(IEnumerable<string> actual, IEnumerable<string> expected, Case caseSensitivity)
         {
-            var expectedEnum = expected.GetEnumerator();
-            var actualEnum = actual.GetEnumerator();
-
-            for (; ; )
+            using(var expectedEnum = expected.GetEnumerator())
+            using(var actualEnum = actual.GetEnumerator())
             {
-                var expectedHasData = expectedEnum.MoveNext();
-                var actualHasData = actualEnum.MoveNext();
-
-                var bothListsProcessed = !expectedHasData && !actualHasData;
-                if (bothListsProcessed)
-                    return true;
-
-                var listsHaveDifferentLengths = !expectedHasData || !actualHasData;
-                if (listsHaveDifferentLengths)
-                    return false;
-
-                if (!StringEqualWithCaseSensitivity(actualEnum.Current, expectedEnum.Current, caseSensitivity))
+                for (; ; )
                 {
-                    return false;
+                    var expectedHasData = expectedEnum.MoveNext();
+                    var actualHasData = actualEnum.MoveNext();
+
+                    var bothListsProcessed = !expectedHasData && !actualHasData;
+                    if (bothListsProcessed)
+                        return true;
+
+                    var listsHaveDifferentLengths = !expectedHasData || !actualHasData;
+                    if (listsHaveDifferentLengths)
+                        return false;
+
+                    if (!StringEqualWithCaseSensitivity(actualEnum.Current, expectedEnum.Current, caseSensitivity))
+                    {
+                        return false;
+                    }
                 }
             }
         }
